@@ -1,0 +1,141 @@
+CREATE TABLE "Mine"(
+	"MineId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("MineId"),
+	"Name" varchar(100) NOT NULL,
+	"Coordinates" point NOT NULL
+);
+CREATE TABLE "Objects"(
+	"ObjectsId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("ObjectsId"),
+	"Name" varchar(100),
+	"Coordinates" point NOT NULL,
+	"MineId" int REFERENCES "Mine"("MineId")
+);
+CREATE TABLE "Construction"(
+	"ConstructionId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("ConstructionId"),
+	"Name" varchar(100) NOT NULL,
+	"Description" text,
+	"IsWorkshop" bool NOT NULL
+);
+CREATE TABLE "Objects_Construction"(
+	"Objects_ConstructionId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("Objects_ConstructionId"),
+	"ObjectsId" int REFERENCES "Objects"("ObjectsId"),
+	"ConstructionId" int REFERENCES "Construction"("ConstructionId")
+);
+CREATE TABLE "ConstructionUnitType"(
+	"ConstructionUnitTypeId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("ConstructionUnitTypeId"),
+	"Name" varchar(100) NOT NULL
+);
+CREATE TABLE "ConstructionUnit"(
+	"ConstructionUnitId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("ConstructionUnitId"),
+	"ConstructionUnitTypeId" int REFERENCES "ConstructionUnitType"("ConstructionUnitTypeId"),
+	"Name" varchar (100) NOT NULL,
+	"MeasuringUnit" varchar(10) NOT NULL
+);
+CREATE TABLE "MaterialSet"(
+	"MaterialSetId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("MaterialSetId"),
+	"ConstructionId" int REFERENCES "Construction"("ConstructionId")
+);
+CREATE TABLE "MaterialSet_ConstructionUnit"(
+	"MaterialSet_ConstructionUnitId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("MaterialSet_ConstructionUnitId"),
+	"MaterialSetId" int REFERENCES "MaterialSet"("MaterialSetId"),
+	"ConstructionUnitId" int REFERENCES "ConstructionUnit"("ConstructionUnitId"),
+	"Amount" real
+);
+CREATE TABLE "CompanyType"(
+	"CompanyTypeId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("CompanyTypeId"),
+	"Name" varchar(100) NOT NULL
+);
+CREATE TABLE "Company"(
+	"CompanyId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("CompanyId"),
+	"PhoneNumber" varchar(20),
+	"Email" varchar(50),
+	"Url" varchar(200),
+	"CompanyTypeId" int REFERENCES "CompanyType"("CompanyTypeId")
+);
+CREATE TABLE "Manufacturer"(
+	"ManufacturerId" int REFERENCES "Company"("CompanyId"),
+	PRIMARY KEY("ManufacturerId"),
+	"Name" varchar(100) NOT NULL
+);
+CREATE TABLE "LogisticCompany"(
+	"LogisticCompanyId" int REFERENCES "Company"("CompanyId"),
+	PRIMARY KEY("LogisticCompanyId"),
+	"Name" varchar(100) NOT NULL
+);
+CREATE TABLE "Storage"(
+	"StorageId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("StorageId"),
+	"Name" varchar(100) NOT NULL,
+	"Coordinates" point NOT NULL,
+	"Address" varchar(200),
+	"ManufacturerId" int REFERENCES "Manufacturer"("ManufacturerId")
+);
+CREATE TABLE "Storage_ConstructionUnit"(
+	"Storage_ConstructionUnitId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("Storage_ConstructionUnitId"),
+	"StorageId" int REFERENCES "Storage"("StorageId"),
+	"ConstructionUnitId" int REFERENCES "ConstructionUnit"("ConstructionUnitId"),
+	"Amount" real NOT NULL,
+	"Price" decimal NOT NULL --может десятичную дробь? V
+);
+CREATE TABLE "TransportType"(
+	"TransportTypeId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("TransportTypeId"),
+	"Name" varchar(100) NOT NULL
+);
+CREATE TABLE "TransportMode"(
+	"TransportModeId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("TransportModeId"),
+	"Name" varchar(100) NOT NULL,
+	"AvgSpeed" real NOT NULL,
+	"TransportTypeId" int REFERENCES "TransportType"("TransportTypeId")
+);
+CREATE TABLE "CoefficientType"(
+	"CoefficientTypeId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("CoefficientTypeId"),
+	"Name" varchar(30) NOT NULL
+);
+CREATE TABLE "CompanyTransport"(
+	"CompanyTransportId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("CompanyTransportId"),
+	"TransportModeId" int REFERENCES "TransportMode"("TransportModeId"),
+	"CompanyId" int REFERENCES "Company"("CompanyId"),
+	"BrandName" varchar(50) NOT NULL,
+	"ModelName" varchar(80) NOT NULL,
+	"CoefficientTypeId" int REFERENCES "CoefficientType"("CoefficientTypeId"),
+	"CoefficientValue" real NOT NULL
+);
+CREATE TABLE "DeliveryAbility"(
+	"DeliveryAbilityId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("DeliveryAbilityId"),
+	"CompanyTransportId" int REFERENCES "CompanyTransport"("CompanyTransportId"),
+	"StorageId" int REFERENCES "Storage"("StorageId"),
+	"ObjectsId" int REFERENCES "Objects"("ObjectsId")
+	
+);
+CREATE TABLE "UserType"(
+	"UserTypeId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("UserTypeId"),
+	"Name" varchar(30)
+);
+CREATE TABLE "User"(
+	"UserId" int GENERATED ALWAYS AS IDENTITY,
+	"UserTypeId" int REFERENCES "UserType"("UserTypeId"),
+	"Surname" varchar(30) NOT NULL,
+	"FirstName" varchar(30) NOT NULL,
+	"Patronymic" varchar(30),
+	"PhoneNumber" varchar(20) NOT NULL,
+	"BirthDate" date NOT NULL,
+	"Post" varchar(30) NOT NULL,
+	"Photo" varchar,
+	"Token" varchar(300)
+);
