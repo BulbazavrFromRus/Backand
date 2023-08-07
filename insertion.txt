@@ -344,8 +344,11 @@ INSERT INTO "CompanyTransport" ("TransportModeId", "CompanyId", "BrandName", "Mo
 INSERT INTO "UserType" ("Name") VALUES
 	('Администратор'),
 	('Инженер'),
-	('Гость');
+	('Бухгалтер');
 	
+INSERT INTO "User" ("UserTypeId", "Surname", "FirstName", "Patronymic", "Login", "Password", "PhoneNumber", "BirthDate") VALUES
+(1, 'Иванов', 'Иван', 'Иванович', 'KrutoyIvan', '4813494d137e1631bba301d5acab6e7bb7aa74ce1185d456565ef51d737677b2', '+79998887766', '12-12-1972')
+
 INSERT INTO "DeliveryAbility" ("CompanyTransportId", "StorageId", "ObjectsId") VALUES
 	(1, 5, 10),
 	(15, 3, 7),

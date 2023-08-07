@@ -132,10 +132,11 @@ CREATE TABLE "User"(
 	"UserTypeId" int REFERENCES "UserType"("UserTypeId"),
 	"Surname" varchar(30) NOT NULL,
 	"FirstName" varchar(30) NOT NULL,
-	"Patronymic" varchar(30),
+	"Patronymic" varchar(30) NOT NULL,
+	"Login" varchar(100) NOT NULL,
+	"Password" varchar(64) NOT NULL,
 	"PhoneNumber" varchar(20) NOT NULL,
 	"BirthDate" date NOT NULL,
-	"Post" varchar(30) NOT NULL,
-	"Photo" varchar,
+	"PhotoPath" varchar,
 	"Token" varchar(300)
 );
