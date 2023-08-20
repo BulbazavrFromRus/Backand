@@ -127,9 +127,16 @@ CREATE TABLE "UserType"(
 	PRIMARY KEY("UserTypeId"),
 	"Name" varchar(30)
 );
+CREATE TABLE "Subsidiary"
+(
+	"SubsidiaryId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("SubsidiaryId"),
+	"Name" varchar(80)
+);
 CREATE TABLE "User"(
 	"UserId" int GENERATED ALWAYS AS IDENTITY,
 	"UserTypeId" int REFERENCES "UserType"("UserTypeId"),
+	"SubsidiaryId" int REFERENCES "Subsidiary"("SubsidiaryId"),
 	"Surname" varchar(30) NOT NULL,
 	"FirstName" varchar(30) NOT NULL,
 	"Patronymic" varchar(30) NOT NULL,
