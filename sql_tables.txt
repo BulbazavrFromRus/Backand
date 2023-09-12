@@ -1,8 +1,15 @@
+CREATE TABLE "Subsidiary"
+(
+	"SubsidiaryId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("SubsidiaryId"),
+	"Name" varchar(80)
+);
 CREATE TABLE "Mine"(
 	"MineId" int GENERATED ALWAYS AS IDENTITY,
 	PRIMARY KEY("MineId"),
 	"Name" varchar(100) NOT NULL,
-	"Coordinates" point NOT NULL
+	"Coordinates" point NOT NULL,
+	"SubsidiaryId" int REFERENCES "Subsidiary"("SubsidiaryId")
 );
 CREATE TABLE "Objects"(
 	"ObjectsId" int GENERATED ALWAYS AS IDENTITY,
@@ -11,12 +18,16 @@ CREATE TABLE "Objects"(
 	"Coordinates" point NOT NULL,
 	"MineId" int REFERENCES "Mine"("MineId")
 );
+CREATE TABLE "ConstructionType"(
+	"ConstructionTypeId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("ConstructionTypeId"),
+	"Name" varchar(80) NOT NULL
+);
 CREATE TABLE "Construction"(
 	"ConstructionId" int GENERATED ALWAYS AS IDENTITY,
 	PRIMARY KEY("ConstructionId"),
-	"Name" varchar(100) NOT NULL,
-	"Description" text,
-	"IsWorkshop" bool NOT NULL
+	"ConstructionTypeId" int REFERENCES "ConstructionType"("ConstructionTypeId"),
+	"Description" text
 );
 CREATE TABLE "Objects_Construction"(
 	"Objects_ConstructionId" int GENERATED ALWAYS AS IDENTITY,
@@ -33,13 +44,18 @@ CREATE TABLE "ConstructionUnit"(
 	"ConstructionUnitId" int GENERATED ALWAYS AS IDENTITY,
 	PRIMARY KEY("ConstructionUnitId"),
 	"ConstructionUnitTypeId" int REFERENCES "ConstructionUnitType"("ConstructionUnitTypeId"),
-	"Name" varchar (100) NOT NULL,
+	"Name" varchar(100) NOT NULL,
 	"MeasuringUnit" varchar(10) NOT NULL
 );
 CREATE TABLE "MaterialSet"(
 	"MaterialSetId" int GENERATED ALWAYS AS IDENTITY,
 	PRIMARY KEY("MaterialSetId"),
 	"ConstructionId" int REFERENCES "Construction"("ConstructionId")
+);
+CREATE TABLE "MeasureUnit"(
+	"MeasureUnitId" int GENERATED ALWAYS AS IDENTITY,
+	PRIMARY KEY("MeasureUnitId"),
+	"Name" varchar(80)
 );
 CREATE TABLE "MaterialSet_ConstructionUnit"(
 	"MaterialSet_ConstructionUnitId" int GENERATED ALWAYS AS IDENTITY,
@@ -126,12 +142,6 @@ CREATE TABLE "UserType"(
 	"UserTypeId" int GENERATED ALWAYS AS IDENTITY,
 	PRIMARY KEY("UserTypeId"),
 	"Name" varchar(30)
-);
-CREATE TABLE "Subsidiary"
-(
-	"SubsidiaryId" int GENERATED ALWAYS AS IDENTITY,
-	PRIMARY KEY("SubsidiaryId"),
-	"Name" varchar(80)
 );
 CREATE TABLE "User"(
 	"UserId" int GENERATED ALWAYS AS IDENTITY,
