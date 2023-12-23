@@ -20,16 +20,17 @@ namespace Backand.Services
 
         }
         
-        public async Task<double> GetDistance(params double[][] routes)
+        public async Task<double?> GetDistance(params double[][] routes)
         {
             input.SendKeys(SerializeObject(routes));
             output.Click();
-            double distance = await Task.Run(() =>
+            double? distance = await Task.Run(() =>
             {
                 while (output.GetAttribute("read") == "0") { }
                 string dist_str = output.GetAttribute("value");
-                double distance = DeserializeObject<double>(dist_str);
-                if (distance > -1)
+                double? distance = DeserializeObject<double?>(dist_str);
+                
+                if (distance==null||distance > -1)
                     return distance;
                 else
                 {

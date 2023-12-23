@@ -2,10 +2,17 @@
 
 namespace Backand.FrontendEntities
 {
+	record Data
+	{
+		public int Data1 { get; set; }
+	}
 	public class BuildInfo
 	{
+		//балка/доска/кирпич
 		public string ConstructionUnitName { get; set; }
+		//россыпь/блок
 		public string ConstructionUnitType { get; set; }
+		//м^3, 
 		public string MeasuringUnit { get; set; }
 		public double Amount { get; set; }
 	}

@@ -5,7 +5,6 @@ using Backand.Services;
 using Backand.Services.WebDriverServiceSpace;
 using Microsoft.AspNetCore.Authorization;
 using static Newtonsoft.Json.JsonConvert;
-
 var builder = WebApplication.CreateBuilder();
 builder.Configuration.AddJsonFile("external_services.json");
 builder.Services.AddWebDriverService();
@@ -190,7 +189,10 @@ app.MapGet("/distance", async (DistanceService ds,HttpContext context) =>
         var routes_str = context.Request.Query["routes"].ToString().Replace(" ", "");
         var routes = DeserializeObject<double[][]>(routes_str);
         var dist = await ds.GetDistance(routes);
-        return Results.Json(dist);
+        if (dist == null)
+            return Results.Json("null");
+        else
+            return Results.Json(dist);
     }
     catch (Exception e)
     {

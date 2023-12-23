@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yandex Maps API Example</title>
+    <link rel="dns-prefetch" href="https://api-maps.yandex.ru"/>
     <!--При инициализации сюда вставиться ссылка на главный скрипт яндекс-карт-->
     <script id="yamaps-root-script"></script>
 </head>
@@ -16,12 +17,11 @@
     <script>
         var myMap, input = document.getElementById("input"),
             output = document.getElementById("output"), init_btn = document.getElementById('init');
-
         function reset() {
             output.setAttribute('read', 0)
         }
-        function get_route(routes) {
-            let route = new ymaps.multiRouter.MultiRoute({
+        function initRoute(routes) {
+            return new ymaps.multiRouter.MultiRoute({
                 referencePoints: routes,
                 params: {
                     routingMode: 'auto'
@@ -29,23 +29,27 @@
             }, {
                 boundsAutoApply: true
             });
+        }
+        function resolveDistance(route,resolve) {
+            let distance = route.getRoutes().get(0).properties.get("distance");
+            let kilometres = distance.value / 1000;
+            myMap.geoObjects.remove(route)
+            resolve(kilometres);
+        }
+        function get_route(routes) {
+            let route = initRoute(routes)
             myMap.geoObjects.add(route);
             return new Promise((resolve, reject) => {
                 let events = route.model.events;
                 events.add(["requestsuccess", "requestfail"], (e) => {
-                    console.log('event: ', e)
                     const type = e.originalEvent.type;
                     if (type == "requestsuccess") {
                         try {
-                            console.log("orig ev: ", e.originalEvent)
-                            let distance = route.getRoutes().get(0).properties.get("distance");
-                            let kilometres = distance.value / 1000;
-                            myMap.geoObjects.remove(route)
-                            resolve(kilometres);
+                            resolveDistance(route, resolve)
                         }
                         catch {
                             myMap.geoObjects.remove(route)
-                            reject("Маршрута не существует")
+                            resolve(null)
                         }
                     }
                     else {
@@ -59,12 +63,12 @@
         
     </script>
     <script>
-        function resetValues() {
+        function setRead() {
             output.setAttribute('read', 1);
             input.value = '';
         }
         function setError(reason) {
-            resetValues();
+            setRead();
             output.setAttribute('error', reason);
             output.setAttribute('value', -1)
         }
@@ -75,7 +79,7 @@
                 get_route(routes).then(val => {
                     output.setAttribute('value', val)
                     console.log(val);
-                    resetValues();
+                    setRead();
                 }).catch(reason => {
                     console.error(reason)
                     setError(reason)
@@ -94,9 +98,18 @@
             });
             init_btn.setAttribute("inited", "1");
         }
+
+        function set_preconnect(full_src) {
+            const link = document.createElement('link');
+            const { protocol, host } = new URL(full_src);
+            link.href = protocol + "://" + host
+            link.rel="preconnect"
+            document.head.appendChild(link)
+        }
         async function initialize_ymaps() {
             let ymapsScript = document.getElementById("yamaps-root-script");
             const src = ymapsScript.getAttribute('src');
+            //set_preconnect(src)
             let d = await fetch(src)
             let text = await d.text()
             ymapsScript.innerText = text
