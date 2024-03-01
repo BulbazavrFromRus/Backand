@@ -38,15 +38,12 @@ namespace Backand.FrontendEntities.Requests
 
 	public class CertainManufacturers
 	{
-		[JsonPropertyName("ids")]
 		public List<int> Ids { get; init; }
 	}
 
 	public class ConstructionOption
 	{
-		[JsonPropertyName("constructionId")]
 		public int ConstructionId { get; init; }
-		[JsonPropertyName("filter")]
 		public Filter Filter { get; init; }
 	}
 

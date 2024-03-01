@@ -83,6 +83,10 @@ app.MapDelete("/material_set_construction_unit/{id}", MaterialSet_ConstructionUn
 app.MapPost("/material_set_construction_unit", MaterialSet_ConstructionUnitManagers.CreateMaterialSet_ConstructionUnit);
 app.MapPut("/material_set_construction_unit", MaterialSet_ConstructionUnitManagers.UpdateMaterialSet_ConstructionUnit);
 
+app.MapGet("/construction_type",ConstructionTypeManager.GetTypes);
+
+app.MapGet("/construction_state",ConstructionStateManager.GetAvailableStates);
+
 //CRUD FOR MANUFACTURE 
 app.MapGet("/manufacturer", ManufactureManagers.GetAllManufacture);
 app.MapGet("/manufacturer/{id}", ManufactureManagers.GetManufactureById);

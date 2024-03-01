@@ -5,11 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Backand.Services;
 using Backand.ManagersClasses.AlgorithmDataManager.TrackGetters;
 using Backand.FrontendEntities.AlgorithmResponse;
-using System.Collections.Generic;
-using OpenQA.Selenium.DevTools.V118.Network;
-using static OpenQA.Selenium.VirtualAuth.VirtualAuthenticatorOptions;
-using Microsoft.EntityFrameworkCore.Internal;
-using System.ComponentModel.Design;
+using Backand.DbEntities.ConstructionSpace;
 
 namespace Backand.ManagersClasses.AlgorithmDataManager
 {
