@@ -10,7 +10,7 @@ using OpenQA.Selenium.DevTools.V118.Autofill;
 using static Newtonsoft.Json.JsonConvert;
 
 var builder = WebApplication.CreateBuilder();
-//builder.Configuration.AddJsonFile("external_services.json");
+builder.Configuration.AddJsonFile("external_services.json");
 builder.Services.AddWebDriverService();
 builder.Services.AddDistanceService();
 string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
