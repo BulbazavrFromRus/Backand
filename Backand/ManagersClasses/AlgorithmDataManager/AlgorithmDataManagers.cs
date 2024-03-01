@@ -7,10 +7,13 @@ using Backand.ManagersClasses.AlgorithmDataManager.TrackGetters;
 using Backand.FrontendEntities.AlgorithmResponse;
 using System.Collections.Generic;
 using OpenQA.Selenium.DevTools.V118.Network;
+using static OpenQA.Selenium.VirtualAuth.VirtualAuthenticatorOptions;
+using Microsoft.EntityFrameworkCore.Internal;
+using System.ComponentModel.Design;
 
 namespace Backand.ManagersClasses.AlgorithmDataManager
 {
-    public class AlgorithmDataManagers
+	public class AlgorithmDataManagers
 	{
 		private static List<DeliveryVariant> DeliveryVariants { get; set; } = null!;
 
@@ -69,6 +72,59 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 			 })
 			 .ToListAsync();
 
+		//DEBUG
+		private static async Task<dynamic> GetTransportsOnFleetsAsyncTest(ApplicationContext dbContext)
+		{
+			var companyNamesQuery = (from logCompany in dbContext.LogisticCompany select new { CompanyId = logCompany.LogisticCompanyId, CompanyName = logCompany.Name })
+				.Union(from manufact in dbContext.Manufacturer select new { CompanyId = manufact.ManufacturerId, CompanyName = manufact.Name });
+
+			var query = (from deliveryRegion in dbContext.DeliveryRegion
+							   join trOnFleet in dbContext.TransportFleet_Transport on deliveryRegion.TransportFleet_TransportId equals trOnFleet.TransportFleet_TransportId
+							   join transport in dbContext.Transport on trOnFleet.TransportId equals transport.TransportId
+							   join trMode in dbContext.TransportMode on transport.TransportModeId equals trMode.TransportModeId
+							   join trType in dbContext.TransportType on trMode.TransportTypeId equals trType.TransportTypeId
+							   join trFleet in dbContext.TransportFleet on trOnFleet.TransportFleetId equals trFleet.TransportFleetId
+							   join company in dbContext.Company on trFleet.CompanyId equals company.CompanyId
+							   join companyName in companyNamesQuery on company.CompanyId equals companyName.CompanyId
+							   join coefType in dbContext.CoefficientType on trOnFleet.CoefficientTypeId equals coefType.CoefficientTypeId
+							   select new
+							   {
+								   deliveryRegion.RegionId,
+								   TransportOnFleet = new TransportOnFleet
+								   {
+									   TransportId = transport.TransportId,
+									   TransportName = transport.Name,
+									   TransportFleet = trFleet,
+									   CoefficientTypeId = trOnFleet.CoefficientTypeId,
+									   CoefficientTypeName = coefType.Name,
+									   CoefficientValue = trOnFleet.CoefficientValue,
+									   TransportTypeId = trType.TransportTypeId,
+									   TransportTypeName = trType.Name,
+									   TransportModeName = trMode.Name,
+									   AverageSpeed = trOnFleet.AverageSpeed,
+									   CompanyId = company.CompanyId,
+									   CompanyName = companyName.CompanyName,
+									   CompanyTypeId = company.CompanyTypeId
+								   }
+							   }).GroupBy(t => t.TransportOnFleet).ToListAsync();
+			//.Select(g => new TransportOnFleetWithRegions
+			//{
+			//	TransportOnFleet = g.Key,
+			//	RegionIds = g.Select(r => (int)r.RegionId!).ToArray()
+			//})
+			//.ToListAsync();
+
+			
+
+			return query;
+
+			//join companyNames in (await dbContext.LogisticCompany.ToListAsync()).Select(c => new { CompanyId = c.LogisticCompanyId, CompanyName = c.Name })
+			// .Union((await dbContext.Manufacturer.ToListAsync()).Select(c => new { CompanyId = c.ManufacturerId, CompanyName = c.Name })).ToList()
+			//on company.CompanyId equals companyNames.CompanyId
+
+
+		}
+
 		private static Dictionary<int, List<ConstructionUnitSupplemented>> GetMaterialsSetsWithConstructionTypes(List<MaterialSet> materialSets, ApplicationContext dbContext, int constructionTypeId) =>
 			(from mSet in materialSets
 					where mSet.ConstructionTypeId == constructionTypeId
@@ -121,7 +177,12 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 			List<Construction> constructions = await dbContext.Construction.Include(c => c.Object).ToListAsync();
 			List<Storage> storages = await dbContext.Storage.ToListAsync();
 			List<TransportFleet> transportFleets = await dbContext.TransportFleet.ToListAsync();
-			List<TransportOnFleetWithRegions> transportsOnFleetsAll = await GetTransportsOnFleetsAsync(dbContext);
+
+			//DEBUG
+			var what = await GetTransportsOnFleetsAsyncTest(dbContext);
+			await Console.Out.WriteLineAsync("TransportOnFleetAll Test Complete");
+
+			List<TransportOnFleetWithRegions> transportsOnFleetsAll = new(); //await GetTransportsOnFleetsAsync(dbContext);
 			List<MaterialSet> materialSets = await dbContext.MaterialSet.ToListAsync();
 			List<StorageMaterial> storagesMaterialsAll = await GetStoragesMaterialsAsync(dbContext);
 
@@ -143,7 +204,7 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 			FilterMethod filterMethod = constructionOption.Filter.FilterMethod;
 
 			AddDeliveryVariantsForGroundTransport(data, objectsToDeliver, transportsOnFleets, filterMethod);
-			AddDeliveryVariantsForAirTransport(data, objectsToDeliver, transportsOnFleets, filterMethod);
+			AddDeliveryVariantsForAirTransport(objectsToDeliver, transportsOnFleets, filterMethod);
 			SortCostAndTimeListByFilterMethod(DeliveryVariants, filterMethod);
 		}
 
@@ -222,7 +283,7 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 		static List<TransportOnFleetWithRegions> GetFirstTransportFromFleets(List<TransportOnFleetWithRegions> transportsOnFleets) =>
 			transportsOnFleets.DistinctBy(t => t.TransportOnFleet.TransportFleet.TransportFleetId).ToList();
 
-		static void AddDeliveryVariantsForAirTransport(AlgorithmData data, Objects objectsToDeliver, List<TransportOnFleetWithRegions> transportsOnFleets, FilterMethod filterMethod)
+		static void AddDeliveryVariantsForAirTransport(Objects objectsToDeliver, List<TransportOnFleetWithRegions> transportsOnFleets, FilterMethod filterMethod)
 		{
 			List<TransportOnFleetWithRegions> airTransport = GetTransportToDeliverFromFleet(transportsOnFleets, objectsToDeliver, TransportTypeValue.Air);
 			SortTransportsOnFleetByFilter(airTransport, filterMethod);
@@ -241,8 +302,6 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 
 		static void GetGroundAirTransportVariations(List<TransportOnFleetWithRegions> airTransports, List<TransportOnFleetWithRegions> groundTransports)
 		{
-
-
 			foreach (var airTransport in airTransports)
 			{
 				var airRegionId = airTransport.TransportOnFleet.TransportFleet.TransportFleetId;
