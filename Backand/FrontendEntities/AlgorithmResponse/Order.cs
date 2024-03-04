@@ -2,6 +2,6 @@
 {
 	public class Order
 	{
-		public List<OrderVariant> Variants { get; init; } = null!;
+		public List<OrderVariant> Variants { get; init; } = new();
 	}
 }

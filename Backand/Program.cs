@@ -5,8 +5,6 @@ using Backand.ManagersClasses;
 using Backand.ManagersClasses.AlgorithmDataManager;
 using Backand.Services;
 using Backand.Services.WebDriverServiceSpace;
-using Microsoft.AspNetCore.Authorization;
-using OpenQA.Selenium.DevTools.V118.Autofill;
 using static Newtonsoft.Json.JsonConvert;
 
 var builder = WebApplication.CreateBuilder();

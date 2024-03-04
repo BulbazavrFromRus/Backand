@@ -11,7 +11,7 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 {
 	public class AlgorithmDataManagers
 	{
-		private static List<DeliveryVariant> DeliveryVariants { get; set; } = null!;
+		private static List<DeliveryVariant> DeliveryVariants { get; set; } = new();
 
 		private static async Task<List<StorageMaterial>> GetStoragesMaterialsAsync(ApplicationContext dbContext) =>
 			await (from storConstrUnit in dbContext.Storage_ConstructionUnit
@@ -28,53 +28,12 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 							  PricePerUnit = storConstrUnit.PricePerUnit
 						  }).ToListAsync();
 
-		private static async Task<List<TransportOnFleetWithRegions>> GetTransportsOnFleetsAsync(ApplicationContext dbContext) =>
-			await (from deliveryRegion in dbContext.DeliveryRegion
-						  join trOnFleet in dbContext.TransportFleet_Transport on deliveryRegion.TransportFleet_TransportId equals trOnFleet.TransportFleet_TransportId
-						  join transport in dbContext.Transport on trOnFleet.TransportId equals transport.TransportId
-						  join trMode in dbContext.TransportMode on transport.TransportModeId equals trMode.TransportModeId
-						  join trType in dbContext.TransportType on trMode.TransportTypeId equals trType.TransportTypeId
-						  join trFleet in dbContext.TransportFleet on trOnFleet.TransportFleetId equals trFleet.TransportFleetId
-						  join company in dbContext.Company on trFleet.CompanyId equals company.CompanyId
-						  join companyNames in (await dbContext.LogisticCompany.ToListAsync()).Select(c => new { CompanyId = c.LogisticCompanyId, CompanyName = c.Name })
-										.Union((await dbContext.Manufacturer.ToListAsync()).Select(c => new { CompanyId = c.ManufacturerId, CompanyName = c.Name }))
-						  on company.CompanyId equals companyNames.CompanyId
-						  join coefType in dbContext.CoefficientType on trOnFleet.CoefficientTypeId equals coefType.CoefficientTypeId
-						  select new
-						  {
-							  deliveryRegion.RegionId,
-							  TransportOnFleet = new TransportOnFleet
-							  {
-								  TransportId = transport.TransportId,
-								  TransportName = transport.Name,
-								  TransportFleet = trFleet,
-								  CoefficientTypeId = trOnFleet.CoefficientTypeId,
-								  CoefficientTypeName = coefType.Name,
-								  CoefficientValue = trOnFleet.CoefficientValue,
-								  TransportTypeId = trType.TransportTypeId,
-								  TransportTypeName = trType.Name,
-								  TransportModeName = trMode.Name,
-								  AverageSpeed = trOnFleet.AverageSpeed,
-								  CompanyId = company.CompanyId,
-								  CompanyName = companyNames.CompanyName,
-								  CompanyTypeId = company.CompanyTypeId
-							  }
-						  })
-			 .GroupBy(t => t.TransportOnFleet)
-			 .Select(g => new TransportOnFleetWithRegions
-			 {
-				 TransportOnFleet = g.Key,
-				 RegionIds = g.Select(r => (int)r.RegionId!).ToArray()
-			 })
-			 .ToListAsync();
-
-		//DEBUG
-		private static async Task<dynamic> GetTransportsOnFleetsAsyncTest(ApplicationContext dbContext)
+		private static async Task<List<TransportOnFleetWithRegions>> GetTransportsOnFleetsAsync(ApplicationContext dbContext)
 		{
 			var companyNamesQuery = (from logCompany in dbContext.LogisticCompany select new { CompanyId = logCompany.LogisticCompanyId, CompanyName = logCompany.Name })
 				.Union(from manufact in dbContext.Manufacturer select new { CompanyId = manufact.ManufacturerId, CompanyName = manufact.Name });
 
-			var query = (from deliveryRegion in dbContext.DeliveryRegion
+			var query = from deliveryRegion in dbContext.DeliveryRegion
 							   join trOnFleet in dbContext.TransportFleet_Transport on deliveryRegion.TransportFleet_TransportId equals trOnFleet.TransportFleet_TransportId
 							   join transport in dbContext.Transport on trOnFleet.TransportId equals transport.TransportId
 							   join trMode in dbContext.TransportMode on transport.TransportModeId equals trMode.TransportModeId
@@ -102,23 +61,18 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 									   CompanyName = companyName.CompanyName,
 									   CompanyTypeId = company.CompanyTypeId
 								   }
-							   }).GroupBy(t => t.TransportOnFleet).ToListAsync();
-			//.Select(g => new TransportOnFleetWithRegions
-			//{
-			//	TransportOnFleet = g.Key,
-			//	RegionIds = g.Select(r => (int)r.RegionId!).ToArray()
-			//})
-			//.ToListAsync();
+							   };
 
-			
+			var data = (await query.ToListAsync())
+				.GroupBy(t => t.TransportOnFleet)
+				.Select(g => new TransportOnFleetWithRegions
+				{
+					TransportOnFleet = g.Key,
+					RegionIds = g.Select(r => (int)r.RegionId!).ToArray()
+				})
+				.ToList();
 
-			return query;
-
-			//join companyNames in (await dbContext.LogisticCompany.ToListAsync()).Select(c => new { CompanyId = c.LogisticCompanyId, CompanyName = c.Name })
-			// .Union((await dbContext.Manufacturer.ToListAsync()).Select(c => new { CompanyId = c.ManufacturerId, CompanyName = c.Name })).ToList()
-			//on company.CompanyId equals companyNames.CompanyId
-
-
+			return data;
 		}
 
 		private static Dictionary<int, List<ConstructionUnitSupplemented>> GetMaterialsSetsWithConstructionTypes(List<MaterialSet> materialSets, ApplicationContext dbContext, int constructionTypeId) =>
@@ -174,19 +128,18 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 			List<Storage> storages = await dbContext.Storage.ToListAsync();
 			List<TransportFleet> transportFleets = await dbContext.TransportFleet.ToListAsync();
 
-			//DEBUG
-			var what = await GetTransportsOnFleetsAsyncTest(dbContext);
-			await Console.Out.WriteLineAsync("TransportOnFleetAll Test Complete");
+			List<TransportOnFleetWithRegions> transportsOnFleetsAll = await GetTransportsOnFleetsAsync(dbContext);
 
-			List<TransportOnFleetWithRegions> transportsOnFleetsAll = new(); //await GetTransportsOnFleetsAsync(dbContext);
+			//DEBUG
+			await Console.Out.WriteLineAsync("TransportOnFleetAll Test Complete");
 			List<MaterialSet> materialSets = await dbContext.MaterialSet.ToListAsync();
 			List<StorageMaterial> storagesMaterialsAll = await GetStoragesMaterialsAsync(dbContext);
 
 			TransportFleetToObjectTracker transportFleetToObject = new(dbContext,distanceService);
-			StorageToObjectTracker storageToObject = new(dbContext,distanceService);
+			StorageToObjectsTracker storageToObjects = new(dbContext,distanceService);
 			StorageToTransportFleetTracker storageToFleet = new(dbContext,distanceService);
 
-			List<StorageToObjectsDistance> storageToObjectsDistances = await storageToObject.GetTrackToEndpoints();
+			List<StorageToObjectsDistance> storageToObjectsDistances = await storageToObjects.GetTrackToEndpoints();
 			List<StorageToTransportFleetDistance> storageToTransportFleetDistances = await storageToFleet.GetTrackToEndpoints();
 			List<TransportFleetToObjectsDistance> transportFleetToObjectsDistance = await transportFleetToObject.GetTrackToEndpoints();
 			return new AlgorithmData(constructions, storages, transportFleets, transportsOnFleetsAll, materialSets, storagesMaterialsAll, storageToObjectsDistances, storageToTransportFleetDistances, transportFleetToObjectsDistance);
@@ -367,7 +320,7 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 					var constructionUnits = constructionMaterialSet.Value;
 
 					//пропускаем тип постройки, который отключен фильтром
-					if (allowedBuildType != BuildType.NoMatter && (BuildType)constructionUnits[0].ConstructionUnitTypeId == allowedBuildType)
+					if (allowedBuildType != BuildType.NoMatter && (BuildType)constructionUnits[0].ConstructionUnitTypeId != allowedBuildType)
 						continue;
 
 					int[] uniqueConstructionUnitIds = constructionUnits.Select(cUnit => cUnit.ConstructionUnitId).ToArray();
@@ -394,17 +347,19 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 							storageMaterialMatrix[storageId, materialId] = materialVariant;
 						}
 
-					var orderVariants = CalculateOrderVariants(storageMaterialMatrix, uniqueStorageIds);
+					var storagesManufacturer = GetManufacturersByStorageIds(uniqueStorageIds, dbContext, dataTuple);
+
+					var orderVariants = CalculateOrderVariants(storageMaterialMatrix, uniqueStorageIds, storagesManufacturer);
 					SortCostAndTimeListByFilterMethod(orderVariants, constructionOption.Filter.FilterMethod);
 
-					response.Orders.Add(GetOrderVariantsWithInfo(orderVariants, dataTuple, constructionUnits, manufaturerNames: GetManufacturersNamesByStorageIds(uniqueStorageIds, dbContext, dataTuple)));
+					response.Orders.Add(GetOrderVariantsWithInfo(orderVariants, dataTuple, constructionUnits, storagesManufacturer));
 				}
 			}
 
 			await context.Response.WriteAsJsonAsync(response);
 		}
 
-		static Order GetOrderVariantsWithInfo(List<ShortOrderVariant> orderVariants, AlgorithmData data, List<ConstructionUnitSupplemented> constructionUnits, Dictionary<int, string> manufaturerNames)
+		static Order GetOrderVariantsWithInfo(List<ShortOrderVariant> orderVariants, AlgorithmData data, List<ConstructionUnitSupplemented> constructionUnits, Dictionary<int, Manufacturer> storageManufaturers)
 		{
 			Order order = new();
 
@@ -424,7 +379,7 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 					Storage storage = data.storages.FirstOrDefault(s => s.StorageId == orderVariant.StorageIdsForMaterials[constrUnitIndex])!;
 
 					BuildInfo buildInfo = new(constructionUnit.Name, constructionUnit.TypeName, constructionUnit.MeasureUnitName, constructionUnit.Amount);
-					ProductionInfo productionInfo = new(manufaturerNames[storage.StorageId], storage.Name, storage.Address, orderVariant.MaterialPricesPerUnit[constrUnitIndex], orderVariant.MaterialCosts[constrUnitIndex]);
+					ProductionInfo productionInfo = new(storageManufaturers[storage.StorageId].Name, storage.Name, storage.Address, orderVariant.MaterialPricesPerUnit[constrUnitIndex], orderVariant.MaterialCosts[constrUnitIndex]);
 					List<LogisticInfo> logisticInfo = LogisticInfo.CreateLogisticInfoList(deliveryVariant.DeliveryRouteParams);
 
 					materialOrderVariants.Add(new(buildInfo, productionInfo, logisticInfo));
@@ -436,32 +391,33 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 			return order;
 		}
 
-		static Dictionary<int, string> GetManufacturersNamesByStorageIds(int[] storageIds, ApplicationContext dbContext, AlgorithmData data) =>
+		static Dictionary<int, Manufacturer> GetManufacturersByStorageIds(int[] storageIds, ApplicationContext dbContext, AlgorithmData data) =>
 			data.storages
 				.Where(s => storageIds.Contains(s.StorageId))
 				.Join(dbContext.Manufacturer,
 				s => s.ManufacturerId,
 				m => m.ManufacturerId,
-				(s, m) => new { s.StorageId, ManufacturerName = m.Name })
-				.ToDictionary(o => o.StorageId, o => o.ManufacturerName);
+				(s, m) => new { s.StorageId, Manufacturer = m })
+				.ToDictionary(o => o.StorageId, o => o.Manufacturer);
 
-		static List<ShortOrderVariant> CalculateOrderVariants(MaterialParams?[,] storageMaterialMatrix, int[] storageIds)
+		static List<ShortOrderVariant> CalculateOrderVariants(MaterialParams?[,] storageMaterialMatrix, int[] storageIds, Dictionary<int, Manufacturer> storagesManufacturer)
 		{
-			//алгоритм для перебора, к сожалению, всех вариантов
+			///алгоритм для перебора, к сожалению, всех вариантов
 			int storagesCount = storageMaterialMatrix.GetLength(0);
 			int materialsCount = storageMaterialMatrix.GetLength(1);
 
-			int[] storageIndicies = new int[materialsCount];
+			int[] storageIndices = new int[materialsCount];
 			List<ShortOrderVariant> orderVariants = new();
 
-			while (storageIndicies.Last() < storagesCount)
+			while (storageIndices.Last() < storagesCount)
 			{
 				bool variantIsValid = true;
-				ShortOrderVariant orderVariant = new ShortOrderVariant(storageIndicies, new DeliveryVariant[materialsCount], new decimal[materialsCount], new decimal[materialsCount], 0, 0);
+				ShortOrderVariant orderVariant = new ShortOrderVariant(storageIndices.ToArray(), new DeliveryVariant[materialsCount], new decimal[materialsCount], new decimal[materialsCount], 0, 0);
+				List<int> storagesWithCalculatedDeliveries = new();
 
-				for (int materialIndex = 0; materialIndex < storageIndicies.Length; materialIndex++)
+				for (int materialIndex = 0; materialIndex < storageIndices.Length; materialIndex++)
 				{
-					MaterialParams? materialVariant = storageMaterialMatrix[storageIndicies[materialIndex], materialIndex];
+					MaterialParams? materialVariant = storageMaterialMatrix[storageIndices[materialIndex], materialIndex];
 
 					if (materialVariant is null)
 					{
@@ -469,12 +425,10 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 						break;
 					}
 
-					orderVariant.MaterialCosts[materialIndex] = materialVariant.Cost;
-					orderVariant.MaterialPricesPerUnit[materialIndex] = materialVariant.PricePerUnit;
+					FillOrderVariantWithMaterial(orderVariant, materialIndex, materialVariant);
 
-					orderVariant.Cost += materialVariant.Cost;
-
-					orderVariant.DeliveryVariants[materialIndex] = DeliveryVariants.FirstOrDefault(c => c.StorageId == storageIds[storageIndicies[materialIndex]]);
+					int storageId = storageIds[storageIndices[materialIndex]];
+					orderVariant.DeliveryVariants[materialIndex] = DeliveryVariants.FirstOrDefault(c => c.StorageId == storageId && ValidateLogisticCompany(storagesManufacturer, c));
 
 					if (orderVariant.DeliveryVariants[materialIndex] is null)
 					{
@@ -485,24 +439,42 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 					if (orderVariant.DeliveryVariants[materialIndex].DeliveryTime > orderVariant.DeliveryTime)
 						orderVariant.DeliveryTime = orderVariant.DeliveryVariants[materialIndex].DeliveryTime;
 
-					if (!orderVariant.StorageIdsForMaterials.Contains(storageIndicies[materialIndex]))
+					if (!storagesWithCalculatedDeliveries.Contains(storageIndices[materialIndex]))
+					{
 						orderVariant.Cost += orderVariant.DeliveryVariants[materialIndex].Cost;
+						storagesWithCalculatedDeliveries.Add(storageIndices[materialIndex]);
+					}
 
-					orderVariant.StorageIdsForMaterials[materialIndex] = storageIndicies[materialIndex];
+					orderVariant.StorageIdsForMaterials[materialIndex] = storageIndices[materialIndex];
 				}
 
 				if (variantIsValid)
 					orderVariants.Add(orderVariant);
 
-				storageIndicies[0]++;
-
-				for (int materialIndex = 0; storageIndicies[materialIndex] == materialsCount && materialIndex < storageIndicies.Length - 1; materialIndex++)
-				{
-					storageIndicies[materialIndex] = 0;
-					storageIndicies[materialIndex + 1]++;
-				}
+				UpdateIndices(storageIndices, materialsCount);
 			}
 			return orderVariants;
+		}
+
+		static bool ValidateLogisticCompany(Dictionary<int, Manufacturer> storagesManufacturer, DeliveryVariant deliveryVariant) =>
+			deliveryVariant.DeliveryRouteParams.All(d => d.TransportOnFleet.CompanyTypeId == (int)CompanyType.LogisticCompany || storagesManufacturer[deliveryVariant.StorageId].ManufacturerId == d.TransportOnFleet.CompanyId);
+
+		static void FillOrderVariantWithMaterial(ShortOrderVariant orderVariant, int materialIndex, MaterialParams materialVariant)
+		{
+			orderVariant.MaterialCosts[materialIndex] = materialVariant.Cost;
+			orderVariant.MaterialPricesPerUnit[materialIndex] = materialVariant.PricePerUnit;
+			orderVariant.Cost += materialVariant.Cost;
+		}
+
+		static void UpdateIndices(int[] storageIndices, int materialsCount)
+		{
+			storageIndices[0]++;
+
+			for (int materialIndex = 0; storageIndices[materialIndex] == materialsCount && materialIndex < storageIndices.Length - 1; materialIndex++)
+			{
+				storageIndices[materialIndex] = 0;
+				storageIndices[materialIndex + 1]++;
+			}
 		}
 	}
 }
