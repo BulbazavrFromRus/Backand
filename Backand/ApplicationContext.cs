@@ -159,6 +159,7 @@ namespace Backand
 
 				entity.Property(e => e.ConstructionTypeId).UseIdentityAlwaysColumn();
 				entity.Property(e => e.DocumentPath).HasColumnType("character varying");
+				entity.Property(e => e.IsAssemblyShop).HasColumnType("bool");
 				entity.Property(e => e.Name).HasMaxLength(100);
 			});
 
