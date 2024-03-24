@@ -14,13 +14,13 @@ builder.Services.AddDistanceService();
 string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy =>
-                      {
-                          policy.AllowAnyMethod();
-                          policy.AllowAnyHeader();
-                          policy.AllowAnyOrigin();
-                      });
+	options.AddPolicy(name: MyAllowSpecificOrigins,
+					  policy =>
+					  {
+						  policy.AllowAnyMethod();
+						  policy.AllowAnyHeader();
+						  policy.AllowAnyOrigin();
+					  });
 });
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 builder.Services.AddDbContext<ApplicationContext>();
@@ -190,23 +190,23 @@ app.MapPost("/algorithm", AlgorithmDataManagers.CalculateOrderCostTime);
 
 app.MapGet("/distance", async (DistanceService ds,HttpContext context) =>
 {
-    try
-    {
-        var routes_str = context.Request.Query["routes"].ToString().Replace(" ", "");
-        var routes = DeserializeObject<double[][]>(routes_str);
-        var dist = await ds.GetDistance(routes);
-        return Results.Json(dist);
-    }
-    catch (Exception e)
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        return Results.Json(new BaseResponse(true, e.Message));
-    }
+	try
+	{
+		var routes_str = context.Request.Query["routes"].ToString().Replace(" ", "");
+		var routes = DeserializeObject<double[][]>(routes_str);
+		var dist = await ds.GetDistance(routes);
+		return Results.Json(dist);
+	}
+	catch (Exception e)
+	{
+		context.Response.StatusCode = StatusCodes.Status400BadRequest;
+		return Results.Json(new BaseResponse(true, e.Message));
+	}
 });
 
 var fields = typeof(StorageToObjectsDistance).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
 
 foreach (var field in fields)
-    Console.WriteLine(field);
+	Console.WriteLine(field);
 
 app.Run();

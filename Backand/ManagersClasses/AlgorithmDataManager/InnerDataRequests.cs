@@ -47,9 +47,9 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 				return distanceObject.Distance;
 		}
 
-		internal static Order GetOrderVariantsWithInfo(List<ShortOrderVariant> orderVariants, AlgorithmData data, List<ConstructionUnitSupplemented> constructionUnits, Dictionary<int, Manufacturer> storageManufaturers)
+		internal static Order GetOrderVariantsWithInfo(List<ShortOrderVariant> orderVariants, AlgorithmData data, List<ConstructionUnitSupplemented> constructionUnits, Dictionary<int, Manufacturer> storageManufaturers, bool isAssemblyBuildRequired)
 		{
-			Order order = new();
+			Order order = new() { IsAssemblyBuildRequired = isAssemblyBuildRequired };
 
 			for (int i = 0; i < orderVariants.Count; i++)
 			{

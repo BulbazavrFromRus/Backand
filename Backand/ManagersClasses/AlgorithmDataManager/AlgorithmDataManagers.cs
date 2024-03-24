@@ -15,8 +15,6 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 {
 	public class AlgorithmDataManagers : DbRequests
 	{
-		private static bool IsAssemblyShowRequired { get; set; } = false;
-
 		static async Task<AlgorithmData> LoadData(ApplicationContext dbContext, DistanceService distanceService)
 		{
 			List<Construction> constructions = await dbContext.Construction.Include(c => c.Object).ToListAsync();
@@ -24,7 +22,6 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 			List<TransportFleet> transportFleets = await dbContext.TransportFleet.ToListAsync();
 
 			List<TransportOnFleetWithRegions> transportsOnFleetsAll = await GetTransportsOnFleetsAsync(dbContext);
-
 			List<MaterialSet> materialSets = await dbContext.MaterialSet.ToListAsync();
 			List<StorageMaterial> storagesMaterialsAll = await GetStoragesMaterialsAsync(dbContext);
 
@@ -50,14 +47,12 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 
 			foreach (var constructionOption in constructionOptions)
 			{
-
-
-				(Objects? objectsToDeliver, int constructionTypeId) = constructions
+                (Objects objectsToDeliver, int constructionTypeId) = constructions
 					.Where(c => c.ConstructionId == constructionOption.ConstructionId)
-					.Select(c => (c.Object, c.ConstructionTypeId))
-					.FirstOrDefault();
+					.Select(c => (c.Object!, c.ConstructionTypeId))
+					.First();
 
-				FillDeliveryVariants(dataTuple, constructionOption, objectsToDeliver);
+                FillDeliveryVariants(dataTuple, constructionOption, objectsToDeliver);
 
 				List<StorageMaterial> storagesMaterials = FilterMaterialsByManufacturers(storagesMaterialsAll, constructionOption);
 				var constructionMaterialSets = GetMaterialsSetsWithConstructionTypes(materialSets, dbContext, constructionTypeId);
@@ -65,7 +60,8 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 
 				foreach (var constructionMaterialSet in constructionMaterialSets)
 				{
-					var constructionUnits = constructionMaterialSet.Value;
+                    var constructionUnits = constructionMaterialSet.Value;
+                    bool isAssemblyBuildRequired = !objectsToDeliver.ContainsAssemblyShop && (BuildType)constructionUnits[0].ConstructionUnitTypeId == BuildType.Block;
 
 					//пропускаем тип постройки, который отключен фильтром
 					if (allowedBuildType != BuildType.NoMatter && (BuildType)constructionUnits[0].ConstructionUnitTypeId != allowedBuildType)
@@ -100,7 +96,7 @@ namespace Backand.ManagersClasses.AlgorithmDataManager
 					var orderVariants = CalculateOrderVariants(storageMaterialMatrix, uniqueStorageIds, storagesManufacturer);
 					SortCostAndTimeListByFilterMethod(orderVariants, constructionOption.Filter.FilterMethod);
 
-					response.Orders.Add(GetOrderVariantsWithInfo(orderVariants, dataTuple, constructionUnits, storagesManufacturer));
+					response.Orders.Add(GetOrderVariantsWithInfo(orderVariants, dataTuple, constructionUnits, storagesManufacturer, isAssemblyBuildRequired));
 				}
 			}
 
